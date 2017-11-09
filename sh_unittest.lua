@@ -1,7 +1,7 @@
 if SERVER then
-	Network.AddPacketID( 'a_packet_test' )
+	GNet.AddPacketID( 'a_packet_test' )
 	concommand.Add("net_test", function()
-		local p = Network.Packet( 'a_packet_test' )
+		local p = GNet.Packet( 'a_packet_test' )
 			p:WriteString('this is a string')
 			p:WriteUChar( 254 )
 			p:WriteBit( true )
@@ -28,7 +28,7 @@ if SERVER then
 		p:Send()
 	end )
 else
-	Network.OnPacketReceive( 'a_packet_test', function( packet )
+	GNet.OnPacketReceive( 'a_packet_test', function( packet )
 
 		print( packet:ReadString() )
 		print( packet:ReadUChar() )
