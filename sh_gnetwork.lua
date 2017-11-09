@@ -566,3 +566,19 @@ function PacketReader( packet_id, len, ply )
 		ply = ply or LocalPlayer(),
 	}, objPacketReader)
 end
+
+/* @brief Intercept the packet for reading.
+ * 
+ * OnPacketReceive takes two arguments, the packet_id as a string and a callback function
+ * with one argument which will contain the objPacketReader.
+*/
+function OnPacketReceive(packet_id, callback)
+	if packet_id and callback then
+		net.Receive(packet_id, function(len, ply)
+			if DEBUG_MESSAGES then
+				print( '[gNetwork] Receiving packet ' .. self.packet_id .. " from " .. ( IsValid( ply ) and tostring( ply ) or "SERVER" ) )
+			end
+			callback(PacketReader(packet_id, len, ply))
+		end )
+	end
+end
