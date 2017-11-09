@@ -358,3 +358,211 @@ function Packet( packet_id )
 		network = {},
 	}, objPacket)
 end
+
+local objPacketReader = {}
+objPacketReader.__index = objPacketReader
+objPacketReader.__tostring = function( self )
+	return 'PacketReader("' .. self.packet_id .. '")'
+end
+
+/* @brief Returns the player entity
+ * @returns Player
+ *
+ * If called on the CLIENT, LocalPlayer() is returned however if it's called on the server
+ * then the player which sent the net message is returned.
+*/
+function objPacketReader.GetPlayer( self )
+	return self.ply
+end
+
+/* @brief Returns the remaining bits in the net message
+ * @returns Remaining Bits
+*/
+function objPacketReader.RemainingBits(self)
+	return self.bits - self.bits_read
+end
+
+/* @brief Returns a string from the net message
+ * @returns String
+*/
+function objPacketReader.ReadString(self)
+	local str = ''
+	while true do
+		local c = net.ReadUInt(8)
+		self.bits_read = self.bits_read + 8
+		if c:byte() ~= 0 then
+			str = str .. string.char( c )
+		else
+			break
+		end
+	end
+	return str
+end
+
+/* @brief Returns a unsigned char from the net message
+ * @returns 8 bit number
+*/
+function objPacketReader.ReadUChar(self)
+	self.bits_read = self.bits_read + 8
+	return net.ReadUInt( 8 )
+end
+
+/* @brief Returns a signed char from the net message
+ * @returns 8 bit number
+*/
+function objPacketReader.ReadChar(self)
+	self.bits_read = self.bits_read + 8
+	return net.ReadInt( 8 )
+end
+
+/* @brief Returns data from the net message
+ * @returns Data
+*/
+function objPacketReader.ReadData(self)
+	local len = net.ReadUInt( 16 )
+	local data = ''
+	for i = 1, len do
+		data = data .. string.char( net.ReadUInt( 8 ) )
+	end
+	self.bits_read = self.bits_read + 16 + ( 8 * len )
+	return data
+end
+
+/* @brief Returns a bit from the net message
+ * @returns 1 bit
+*/
+function objPacketReader.ReadBit(self)
+	self.bits_read = self.bits_read + 1
+	return net.ReadBit()
+end
+
+/* @brief Returns a unsigned short from the net message
+ * @returns 16 bit number
+*/
+function objPacketReader.ReadUShort(self)
+	self.bits_read = self.bits_read + 16
+	return net.ReadUInt( 16 )
+end
+
+/* @brief Returns a unsigned int from the net message
+ * @returns n bit number
+*/
+function objPacketReader.ReadUInt( self, bits )
+	self.bits_read = self.bits_read + bits
+	return net.ReadUInt( bits )
+end
+
+/* @brief Returns a unsigned int from the net message
+ * @returns n bit number
+*/
+function objPacketReader.ReadInt( self, bits )
+	self.bits_read = self.bits_read + bits
+	return net.ReadInt( bits )
+end
+
+/* @brief Returns a unsigned long from the net message
+ * @returns 32 bit number
+*/
+function objPacketReader.ReadULong( self )
+	self.bits_read = self.bits_read + 32
+	return net.ReadUInt( 32 )
+end
+
+/* @brief Returns a signed long from the net message
+ * @returns 32 bit number
+*/
+function objPacketReader.ReadLong( self )
+	self.bits_read = self.bits_read + 32
+	return net.ReadInt( 32 )
+end
+
+/* @brief Returns a signed short from the net message
+ * @returns 16 bit number
+*/
+function objPacketReader.ReadShort(self)
+	self.bits_read = self.bits_read + 16
+	return net.ReadInt( 16 )
+end
+
+/* @brief Returns a float from the net message
+ * @returns 32 bit number
+*/
+function objPacketReader.ReadFloat(self)
+	self.bits_read = self.bits_read + 32
+	return net.ReadFloat()
+end
+
+/* @brief Returns a double from the net message
+ * @returns 64 bit number
+*/
+function objPacketReader.ReadDouble(self)
+	self.bits_read = self.bits_read + 64
+	return net.ReadDouble()
+end
+
+/* @brief Returns a Vector from the net message
+ * @returns Vector
+*/
+function objPacketReader.ReadVector(self)
+	self.bits_read = self.bits_read + 96
+	return Vector( net.ReadFloat(), net.ReadFloat(), net.ReadFloat() )
+end
+
+/* @brief Returns a Color from the net message
+ * @returns Color
+*/
+function objPacketReader.ReadColor(self)
+	self.bits_read = self.bits_read + 25
+	local c = Color(net.ReadUInt( 8 ), net.ReadUInt( 8 ), net.ReadUInt( 8 ), 255)
+	if net.ReadBool() then
+		self.bits_read = self.bits_read + 8
+		c.a = net.ReadUInt( 8 )
+	end
+	return c
+end
+
+/* @brief Returns a Entity from the net message
+ * @returns Entity
+*/
+function objPacketReader.ReadEntity(self)
+	self.bits_read = self.bits_read + 16
+	return Entity( net.ReadUInt( 16 ) )
+end
+
+/* @brief Returns a Angle from the net message
+ * @returns Angle
+*/
+function objPacketReader.ReadAngle(self)
+	self.bits_read = self.bits_read + (32 * 3)
+	return Angle( net.ReadFloat(), net.ReadFloat(), net.ReadFloat() )
+end
+
+/* @brief Returns a bool from the net message
+ * @returns bool
+*/
+function objPacketReader:ReadBool()
+	self.bits_read = self.bits_read + 1
+	return net.ReadBool()
+end
+
+objPacketReader.ReadNormal = objPacketReader.ReadVector
+objPacketReader.ReadPlayer = objPacketReader.ReadEntity
+
+/* @brief Returns if there's still data to be read in the net message
+ * @returns Is Data Remaining
+*/
+function objPacketReader.HasData(self)
+	return self:RemainingBits() > 0
+end
+
+/* @brief Creates a packet reader
+ * @returns objPacketReader
+*/
+function PacketReader( packet_id, len, ply )
+	return setmetatable({
+		packet_id = packet_id,
+		bits = len,
+		bits_read = 0,
+		ply = ply or LocalPlayer(),
+	}, objPacketReader)
+end
